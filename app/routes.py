@@ -10,8 +10,7 @@ task_id = 0
 
 @router.get("/")
 def root():
-    return {"message": "Service is running"}
-
+    return {"message": "Hello from self-hosted CI/CD deploy"}
 
 @router.post("/tasks")
 def create_task():
