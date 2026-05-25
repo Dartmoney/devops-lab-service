@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-check:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: Checkout source code
@@ -17,35 +17,32 @@ jobs:
       - name: Build Docker image
         run: docker build -t devops-lab .
 
-      - name: Run container
-        run: docker run -d -p 8000:8000 --name devops-test devops-lab
+      - name: Run test container
+        run: |
+          docker rm -f devops-test || true
+          docker run -d -p 8001:8000 --name devops-test devops-lab
 
       - name: Wait for service
         run: sleep 5
 
       - name: Check service
-        run: curl -f http://localhost:8000
+        run: curl -f http://localhost:8001
 
       - name: Check metrics
-        run: curl -f http://localhost:8000/metrics
+        run: curl -f http://localhost:8001/metrics
 
       - name: Stop test container
         if: always()
-        run: docker rm -f devops-test
+        run: docker rm -f devops-test || true
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build-and-check
 
     steps:
-      - name: Deploy to VM via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          script: |
-            cd ${{ secrets.VM_PROJECT_PATH }}
-            git pull
-            docker compose up -d --build
-            docker compose ps
+      - name: Deploy on local VM
+        run: |
+          cd ~/devops-lab-service
+          git pull
+          docker compose up -d --build
+          docker compose ps
